@@ -1,2 +1,3 @@
-2025/07/31-11:58:34.342 d6cd Creating DB /home/bagas/Downloads/clevio-pro-project/clevio-pro/data/auth/session-pro/Default/Session Storage since it was missing.
-2025/07/31-11:58:34.348 d6cd Reusing MANIFEST /home/bagas/Downloads/clevio-pro-project/clevio-pro/data/auth/session-pro/Default/Session Storage/MANIFEST-000001
+2025/07/31-15:00:58.453 15099 Reusing MANIFEST /home/bagas/Downloads/clevio-pro-project/clevio-pro/data/auth/session-pro/Default/Session Storage/MANIFEST-000001
+2025/07/31-15:00:58.454 15099 Recovering log #3
+2025/07/31-15:00:58.454 15099 Reusing old log /home/bagas/Downloads/clevio-pro-project/clevio-pro/data/auth/session-pro/Default/Session Storage/000003.log 
