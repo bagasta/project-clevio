@@ -53,12 +53,10 @@
         <span class="h5">Clevio Pro</span>
       </div>
       <nav class="nav flex-column mt-2">
-        <a href="#" class="nav-link active" aria-current="page">
+        <a href="#" class="nav-link" id="navAgents">
           <i class="fa fa-address-card"></i>Add Your Agent
         </a>
-      </nav>
-      <nav class="nav flex-column mt-2">
-        <a href="#" class="nav-link active" aria-current="page">
+        <a href="#" class="nav-link active" id="navSessions">
           <i class="fa-solid fa-cubes me-2"></i>Whatsapp Management System
         </a>
       </nav>
@@ -73,7 +71,29 @@
         </button>
       </div>
       <!-- Content -->
-      <main class="main-content">
+      <main class="main-content" id="agentsSection" style="display:none;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">Agents</h5>
+          <button id="newAgentBtn" class="btn btn-primary">
+            <i class="fa-solid fa-plus me-1"></i>Create Agent
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-striped" id="agentsTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Channel</th>
+                <th>Workflow ID</th>
+                <th>Execution ID</th>
+                <th>Created At</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </main>
+      <main class="main-content" id="sessionsSection">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="mb-0">Whatsapp Sessions</h5>
           <button id="newSessionBtn" class="btn btn-primary">
@@ -97,6 +117,58 @@
       </main>
     </div>
     <!-- Modals -->
+    <!-- Create Agent Modal -->
+    <div
+      class="modal fade"
+      id="createAgentModal"
+      tabindex="-1"
+      aria-labelledby="createAgentLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="createAgentLabel">Create New Agent</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-coreui-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="createAgentForm">
+              <div class="mb-3">
+                <label for="agentName" class="form-label">Agent Name</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="agentName"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="agentChannel" class="form-label">Channel</label>
+                <select id="agentChannel" class="form-select">
+                  <option value="whatsapp">WhatsApp</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="agentTemplate" class="form-label">Template</label>
+                <select id="agentTemplate" class="form-select"></select>
+              </div>
+              <div id="agentError" class="text-danger mb-2" style="display:none;"></div>
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary">
+                  Create Agent
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Create Session Modal -->
     <div
       class="modal fade"
@@ -218,6 +290,7 @@
     </div>
     <!-- CoreUI JS -->
     <script src="https://cdn.jsdelivr.net/npm/@coreui/coreui@5.0.0/dist/js/coreui.bundle.min.js"></script>
+    <script src="js/agents.js"></script>
     <!-- Dashboard logic -->
     <script src="js/dashboard.js"></script>
   </body>
