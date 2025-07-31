@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clevio Pro – Dashboard</title>
+    <!-- CoreUI CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/@coreui/coreui@5.0.0/dist/css/coreui.min.css"
+      rel="stylesheet"
+    />
+    <!-- Icons (FontAwesome optional) -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      rel="stylesheet"
+    />
+    <!-- QRCode library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.0/build/qrcode.min.js"></script>
+    <style>
+      body {
+        display: flex;
+        min-height: 100vh;
+        background-color: #f5f8fa;
+      }
+      .sidebar {
+        width: 220px;
+        background-color: #ffffff;
+        border-right: 1px solid #e0e6ed;
+      }
+      .sidebar .nav-link.active {
+        font-weight: 500;
+        color: #007bff;
+      }
+      .main-content {
+        flex: 1;
+        padding: 1rem;
+      }
+      .header {
+        height: 56px;
+        border-bottom: 1px solid #e0e6ed;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 1rem;
+        background-color: #ffffff;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <div class="sidebar d-flex flex-column">
+      <div class="p-3 border-bottom">
+        <span class="h5">Clevio Pro</span>
+      </div>
+      <nav class="nav flex-column mt-2">
+        <a href="#" class="nav-link active" aria-current="page">
+          <i class="fa fa-address-card"></i>Add Your Agent
+        </a>
+      </nav>
+      <nav class="nav flex-column mt-2">
+        <a href="#" class="nav-link active" aria-current="page">
+          <i class="fa-solid fa-cubes me-2"></i>Whatsapp Management System
+        </a>
+      </nav>
+    </div>
+    <!-- Main content wrapper -->
+    <div class="d-flex flex-column flex-grow-1">
+      <!-- Header -->
+      <div class="header">
+        <div class="fw-bold">Dashboard</div>
+        <button id="logoutBtn" class="btn btn-outline-secondary btn-sm">
+          <i class="fa-solid fa-right-from-bracket me-1"></i>Logout
+        </button>
+      </div>
+      <!-- Content -->
+      <main class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">Whatsapp Sessions</h5>
+          <button id="newSessionBtn" class="btn btn-primary">
+            <i class="fa-solid fa-plus me-1"></i>Create Session
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-striped" id="sessionsTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Webhook</th>
+                <th>Created At</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+    <!-- Modals -->
+    <!-- Create Session Modal -->
+    <div
+      class="modal fade"
+      id="createSessionModal"
+      tabindex="-1"
+      aria-labelledby="createSessionLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="createSessionLabel">Create New Session</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-coreui-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="createSessionForm">
+              <div class="mb-3">
+                <label for="sessionName" class="form-label">Session Name</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="sessionName"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="sessionWebhook" class="form-label"
+                  >Webhook (optional)</label
+                >
+                <input
+                  type="url"
+                  class="form-control"
+                  id="sessionWebhook"
+                  placeholder="https://example.com/webhook"
+                />
+              </div>
+              <div id="createError" class="text-danger mb-2" style="display:none;"></div>
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary">
+                  Create Session
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Edit Webhook Modal -->
+    <div
+      class="modal fade"
+      id="editWebhookModal"
+      tabindex="-1"
+      aria-labelledby="editWebhookLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editWebhookLabel">Edit Webhook</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-coreui-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="editWebhookForm">
+              <input type="hidden" id="editSessionName" />
+              <div class="mb-3">
+                <label for="editSessionWebhook" class="form-label"
+                  >Webhook URL</label
+                >
+                <input
+                  type="url"
+                  class="form-control"
+                  id="editSessionWebhook"
+                  required
+                />
+              </div>
+              <div id="editError" class="text-danger mb-2" style="display:none;"></div>
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- QR Modal -->
+    <div
+      class="modal fade"
+      id="qrModal"
+      tabindex="-1"
+      aria-labelledby="qrLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="qrLabel">Scan QR Code</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-coreui-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body d-flex justify-content-center">
+            <canvas id="qrCanvas" style="max-width: 100%; height: auto;"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- CoreUI JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@coreui/coreui@5.0.0/dist/js/coreui.bundle.min.js"></script>
+    <!-- Dashboard logic -->
+    <script src="js/dashboard.js"></script>
+  </body>
+</html>

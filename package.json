@@ -1,0 +1,30 @@
+{
+  "name": "clevio-pro",
+  "version": "1.0.0",
+  "description": "WhatsApp Management System with Dashboard",
+  "main": "index.js",
+  "scripts": {
+    "install-all": "cd dashboard-server && npm install && cd ../whatsapp-api && npm install",
+    "start": "npm run start:dashboard & npm run start:api",
+    "start:dashboard": "cd dashboard-server && npm start",
+    "start:api": "cd whatsapp-api && npm start",
+    "dev": "npm run dev:dashboard & npm run dev:api",
+    "dev:dashboard": "cd dashboard-server && nodemon dashboard-server.js",
+    "dev:api": "cd whatsapp-api && nodemon whatsapp-api.js"
+  },
+  "keywords": [
+    "whatsapp",
+    "api",
+    "dashboard",
+    "management",
+    "nodejs"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "dependencies": {
+    "axios": "^1.11.0"
+  }
+}
