@@ -1,10 +1,6 @@
 [
   {
-    "name": "pro",
-    "webhook": "https://n8n-new.chiefaiofficer.id/webhook-test/clevio-pro"
-  },
-  {
-    "name": "jilo",
-    "webhook": null
+    "name": "AI",
+    "webhook": "https://n8n.chiefaiofficer.id/webhook-test/aidest"
   }
 ]

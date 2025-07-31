@@ -1,23 +1,28 @@
-2025/07/31-15:00:58.385 1507e Reusing MANIFEST /home/bagas/Downloads/clevio-pro-project/clevio-pro/data/auth/session-pro/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
-2025/07/31-15:00:58.386 1507e Recovering log #478
-2025/07/31-15:00:58.500 1507e Reusing old log /home/bagas/Downloads/clevio-pro-project/clevio-pro/data/auth/session-pro/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/000478.log 
-2025/07/31-15:01:01.046 15098 Level-0 table #489: started
-2025/07/31-15:01:01.069 15098 Level-0 table #489: 470273 bytes OK
-2025/07/31-15:01:01.072 15098 Delete type=0 #478
-2025/07/31-15:01:01.077 15098 Manual compaction at level-0 from '\x00#\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00$\x00\x00\x00' @ 0 : 0; will stop at '\x00#\x00\x00\x05' @ 2405661 : 1
-2025/07/31-15:01:01.077 15098 Compacting 1@0 + 1@1 files
-2025/07/31-15:01:01.147 15098 Generated table #490@0: 12537 keys, 228353 bytes
-2025/07/31-15:01:01.150 15098 Generated table #491@0: 135 keys, 3493 bytes
-2025/07/31-15:01:01.150 15098 Compacted 1@0 + 1@1 files => 231846 bytes
-2025/07/31-15:01:01.153 15098 compacted to: files[ 0 2 18 0 0 0 0 ]
-2025/07/31-15:01:01.153 15098 Delete type=2 #489
-2025/07/31-15:01:01.155 15098 Manual compaction at level-0 from '\x00#\x00\x00\x05' @ 2405661 : 1 .. '\x00$\x00\x00\x00' @ 0 : 0; will stop at (end)
-2025/07/31-15:01:07.030 15098 Compacting 1@1 + 4@2 files
-2025/07/31-15:01:07.277 15098 Generated table #492@1: 63047 keys, 2230164 bytes
-2025/07/31-15:01:07.368 15098 Generated table #493@1: 9000 keys, 2156515 bytes
-2025/07/31-15:01:07.458 15098 Generated table #494@1: 1373 keys, 2135358 bytes
-2025/07/31-15:01:07.652 15098 Generated table #495@1: 27322 keys, 2202527 bytes
-2025/07/31-15:01:07.656 15098 Generated table #496@1: 10 keys, 58603 bytes
-2025/07/31-15:01:07.656 15098 Compacted 1@1 + 4@2 files => 8783167 bytes
-2025/07/31-15:01:07.660 15098 compacted to: files[ 0 1 19 0 0 0 0 ]
-2025/07/31-15:01:07.661 15098 Delete type=2 #481
+2025/07/31-15:27:20.360 16ab0 Reusing MANIFEST /home/bagas/Downloads/clevio-pro-project/clevio-pro/data/auth/session-pro/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2025/07/31-15:27:20.362 16ab0 Recovering log #518
+2025/07/31-15:27:20.507 16ab0 Reusing old log /home/bagas/Downloads/clevio-pro-project/clevio-pro/data/auth/session-pro/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/000518.log 
+2025/07/31-15:27:22.912 16aae Level-0 table #529: started
+2025/07/31-15:27:22.936 16aae Level-0 table #529: 423634 bytes OK
+2025/07/31-15:27:22.941 16aae Delete type=0 #518
+2025/07/31-15:27:22.942 16aae Manual compaction at level-0 from '\x00'\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00(\x00\x00\x00' @ 0 : 0; will stop at '\x00'\x00\x00\x05' @ 2483905 : 1
+2025/07/31-15:27:22.942 16aae Compacting 1@0 + 1@1 files
+2025/07/31-15:27:22.989 16aae Generated table #530@0: 11506 keys, 208403 bytes
+2025/07/31-15:27:22.992 16aae Generated table #531@0: 135 keys, 3493 bytes
+2025/07/31-15:27:22.992 16aae Compacted 1@0 + 1@1 files => 211896 bytes
+2025/07/31-15:27:22.994 16aae compacted to: files[ 0 2 22 0 0 0 0 ]
+2025/07/31-15:27:22.996 16aae Delete type=2 #529
+2025/07/31-15:27:22.996 16aad Manual compaction at level-0 from '\x00'\x00\x00\x05' @ 2483905 : 1 .. '\x00(\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/07/31-15:27:28.422 16aad Compacting 1@1 + 4@2 files
+2025/07/31-15:27:28.668 16aad Generated table #532@1: 66456 keys, 2231788 bytes
+2025/07/31-15:27:28.773 16aad Generated table #533@1: 15354 keys, 2167812 bytes
+2025/07/31-15:27:28.821 16aad Generated table #534@1: 1368 keys, 2133958 bytes
+2025/07/31-15:27:28.928 16aad Generated table #535@1: 27449 keys, 2207350 bytes
+2025/07/31-15:27:28.931 16aad Generated table #536@1: 11 keys, 55155 bytes
+2025/07/31-15:27:28.931 16aad Compacted 1@1 + 4@2 files => 8796063 bytes
+2025/07/31-15:27:28.933 16aad compacted to: files[ 0 1 23 0 0 0 0 ]
+2025/07/31-15:27:28.934 16aad Delete type=2 #524
+2025/07/31-15:27:28.935 16aad Delete type=2 #522
+2025/07/31-15:27:28.935 16aad Delete type=2 #525
+2025/07/31-15:27:28.935 16aad Delete type=2 #523
+2025/07/31-15:27:28.935 16aad Delete type=2 #530
+2025/07/31-15:27:28.935 16aad Delete type=2 #521

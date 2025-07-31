@@ -1,33 +1,28 @@
-2025/07/31-15:03:42.566 153e9 Reusing MANIFEST /home/bagas/Downloads/clevio-pro-project/clevio-pro/data/auth/session-pro/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
-2025/07/31-15:03:42.571 153e9 Recovering log #488
-2025/07/31-15:03:42.768 153e9 Reusing old log /home/bagas/Downloads/clevio-pro-project/clevio-pro/data/auth/session-pro/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/000488.log 
-2025/07/31-15:03:42.769 153e9 Delete type=2 #483
-2025/07/31-15:03:42.769 153e9 Delete type=2 #484
-2025/07/31-15:03:42.769 153e9 Delete type=2 #482
-2025/07/31-15:03:42.769 153e9 Delete type=2 #490
-2025/07/31-15:03:42.769 153e9 Delete type=2 #485
-2025/07/31-15:03:45.292 153ee Level-0 table #499: started
-2025/07/31-15:03:45.317 153ee Level-0 table #499: 424796 bytes OK
-2025/07/31-15:03:45.320 153ee Delete type=0 #488
-2025/07/31-15:03:45.321 153ee Manual compaction at level-0 from '\x00$\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00%\x00\x00\x00' @ 0 : 0; will stop at '\x00$\x00\x00\x05' @ 2425079 : 1
-2025/07/31-15:03:45.321 153ee Compacting 1@0 + 1@1 files
-2025/07/31-15:03:45.356 153ee Generated table #500@0: 11504 keys, 209375 bytes
-2025/07/31-15:03:45.358 153ee Generated table #501@0: 135 keys, 3492 bytes
-2025/07/31-15:03:45.358 153ee Compacted 1@0 + 1@1 files => 212867 bytes
-2025/07/31-15:03:45.361 153ee compacted to: files[ 0 2 19 0 0 0 0 ]
-2025/07/31-15:03:45.361 153ee Delete type=2 #499
-2025/07/31-15:03:45.362 153ee Manual compaction at level-0 from '\x00$\x00\x00\x05' @ 2425079 : 1 .. '\x00%\x00\x00\x00' @ 0 : 0; will stop at (end)
-2025/07/31-15:03:51.279 15442 Compacting 1@1 + 4@2 files
-2025/07/31-15:03:51.528 15442 Generated table #502@1: 64027 keys, 2229850 bytes
-2025/07/31-15:03:51.633 15442 Generated table #503@1: 10435 keys, 2159141 bytes
-2025/07/31-15:03:51.689 15442 Generated table #504@1: 1374 keys, 2132701 bytes
-2025/07/31-15:03:51.813 15442 Generated table #505@1: 27352 keys, 2203371 bytes
-2025/07/31-15:03:51.817 15442 Generated table #506@1: 10 keys, 58586 bytes
-2025/07/31-15:03:51.817 15442 Compacted 1@1 + 4@2 files => 8783649 bytes
-2025/07/31-15:03:51.820 15442 compacted to: files[ 0 1 20 0 0 0 0 ]
-2025/07/31-15:03:51.821 15442 Delete type=2 #493
-2025/07/31-15:03:51.821 15442 Delete type=2 #500
-2025/07/31-15:03:51.821 15442 Delete type=2 #492
-2025/07/31-15:03:51.821 15442 Delete type=2 #491
-2025/07/31-15:03:51.821 15442 Delete type=2 #495
-2025/07/31-15:03:51.821 15442 Delete type=2 #494
+2025/07/31-15:32:33.459 16fd4 Reusing MANIFEST /home/bagas/Downloads/clevio-pro-project/clevio-pro/data/auth/session-pro/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2025/07/31-15:32:33.460 16fd4 Recovering log #528
+2025/07/31-15:32:33.649 16fd4 Reusing old log /home/bagas/Downloads/clevio-pro-project/clevio-pro/data/auth/session-pro/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/000528.log 
+2025/07/31-15:32:36.178 16fc0 Level-0 table #539: started
+2025/07/31-15:32:36.206 16fc0 Level-0 table #539: 429079 bytes OK
+2025/07/31-15:32:36.210 16fc0 Delete type=0 #528
+2025/07/31-15:32:36.211 16fc0 Manual compaction at level-0 from '\x00(\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00)\x00\x00\x00' @ 0 : 0; will stop at '\x00(\x00\x00\x05' @ 2503399 : 1
+2025/07/31-15:32:36.211 16fc0 Compacting 1@0 + 1@1 files
+2025/07/31-15:32:36.260 16fc0 Generated table #540@0: 11562 keys, 211206 bytes
+2025/07/31-15:32:36.262 16fc0 Generated table #541@0: 135 keys, 3493 bytes
+2025/07/31-15:32:36.262 16fc0 Compacted 1@0 + 1@1 files => 214699 bytes
+2025/07/31-15:32:36.264 16fc0 compacted to: files[ 0 2 23 0 0 0 0 ]
+2025/07/31-15:32:36.265 16fc0 Delete type=2 #539
+2025/07/31-15:32:36.265 16fc0 Manual compaction at level-0 from '\x00(\x00\x00\x05' @ 2503399 : 1 .. '\x00)\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/07/31-15:32:42.055 16fbe Compacting 1@1 + 4@2 files
+2025/07/31-15:32:42.310 16fbe Generated table #542@1: 66815 keys, 2231579 bytes
+2025/07/31-15:32:42.415 16fbe Generated table #543@1: 17423 keys, 2169378 bytes
+2025/07/31-15:32:42.462 16fbe Generated table #544@1: 1365 keys, 2135646 bytes
+2025/07/31-15:32:42.639 16fbe Generated table #545@1: 27467 keys, 2204569 bytes
+2025/07/31-15:32:42.645 16fbe Generated table #546@1: 33 keys, 56494 bytes
+2025/07/31-15:32:42.646 16fbe Compacted 1@1 + 4@2 files => 8797666 bytes
+2025/07/31-15:32:42.649 16fbe compacted to: files[ 0 1 24 0 0 0 0 ]
+2025/07/31-15:32:42.651 16fbe Delete type=2 #531
+2025/07/31-15:32:42.651 16fbe Delete type=2 #532
+2025/07/31-15:32:42.651 16fbe Delete type=2 #540
+2025/07/31-15:32:42.651 16fbe Delete type=2 #534
+2025/07/31-15:32:42.651 16fbe Delete type=2 #535
+2025/07/31-15:32:42.652 16fbe Delete type=2 #533

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "template1",
+    "name": "Marketing Agent",
+    "webhook": "https://n8n.chiefaiofficer.id/webhook-test/aidest",
+    "description": "Template untuk agen marketing. Otomatis mengirim notifikasi marketing."
+  },
+  {
+    "id": "template2",
+    "name": "Support Agent",
+    "webhook": "https://example.com/webhook/support",
+    "description": "Template untuk agen dukungan pelanggan. Mengarahkan pesan ke tim support."
+  }
+]

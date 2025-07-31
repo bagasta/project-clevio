@@ -1,28 +1,88 @@
-// Dashboard script for Clevio Pro
-// Handles session management, real-time updates via SSE, and modal interactions
+// Dashboard script for the updated Clevio Pro dashboard.
+// This version renames sessions to agents and introduces a template
+// selection step when creating a new agent.  Templates are defined in
+// ``/templates.json`` and include a default webhook that is applied
+// automatically when the user creates an agent.
 
 document.addEventListener('DOMContentLoaded', () => {
-  const sessionsTable = document.getElementById('sessionsTable').getElementsByTagName('tbody')[0];
-  const newSessionBtn = document.getElementById('newSessionBtn');
-  const logoutBtn = document.getElementById('logoutBtn');
-  const createSessionModal = new coreui.Modal(document.getElementById('createSessionModal'));
+  // DOM references
+  const sessionsTableBody = document.querySelector('#sessionsTable tbody');
+  const newAgentBtn      = document.getElementById('newAgentBtn');
+  const logoutBtn        = document.getElementById('logoutBtn');
+  const templateModal    = new coreui.Modal(document.getElementById('templateModal'));
+  const createAgentModal = new coreui.Modal(document.getElementById('createAgentModal'));
   const editWebhookModal = new coreui.Modal(document.getElementById('editWebhookModal'));
-  const qrModal = new coreui.Modal(document.getElementById('qrModal'));
-  const createSessionForm = document.getElementById('createSessionForm');
-  const editWebhookForm = document.getElementById('editWebhookForm');
+  const qrModal          = new coreui.Modal(document.getElementById('qrModal'));
+  const createAgentForm  = document.getElementById('createAgentForm');
+  const editWebhookForm  = document.getElementById('editWebhookForm');
+  const templateContainer = document.getElementById('templateContainer');
+  const selectedWebhookInput = document.getElementById('selectedWebhook');
 
+  // State
+  let templates = [];
   let eventSource;
 
-  // Initialize SSE connection for real-time updates
+  /**
+   * Load templates from templates.json.  This file contains an array of
+   * objects with ``id``, ``name``, ``webhook`` and ``description`` fields.
+   */
+  async function loadTemplates() {
+    try {
+      const res = await fetch('/templates.json');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      templates = await res.json();
+    } catch (e) {
+      console.error('Failed to load templates', e);
+      templates = [];
+    }
+  }
+
+  /**
+   * Populate the template modal with cards.  Each card represents a
+   * template.  When clicked, the default webhook is stored and the
+   * create‑agent modal is opened.
+   */
+  function populateTemplateCards() {
+    templateContainer.innerHTML = '';
+    templates.forEach(tpl => {
+      const col = document.createElement('div');
+      col.className = 'col';
+      col.innerHTML = `
+        <div class="card h-100 template-card" style="cursor: pointer;">
+          <div class="card-body">
+            <h5 class="card-title">${tpl.name}</h5>
+            <p class="card-text">${tpl.description || ''}</p>
+          </div>
+        </div>`;
+      // When a template is chosen, store its webhook and show the create modal
+      col.querySelector('.template-card').addEventListener('click', () => {
+        selectedWebhookInput.value = tpl.webhook;
+        templateModal.hide();
+        createAgentModal.show();
+      });
+      templateContainer.appendChild(col);
+    });
+  }
+
+  /**
+   * Initialise the SSE connection to receive real‑time updates about
+   * agents (sessions) from the backend.  On message, update the table.
+   */
   function initSSE() {
+    // Close previous event source if any
+    if (eventSource) eventSource.close();
     eventSource = new EventSource('/api/events');
     eventSource.onmessage = (event) => {
-      const sessions = JSON.parse(event.data);
-      renderSessions(sessions);
+      try {
+        const sessions = JSON.parse(event.data);
+        renderSessions(sessions);
+      } catch (e) {
+        console.error('Failed to parse SSE data', e);
+      }
     };
     eventSource.onerror = (error) => {
       console.error('SSE error:', error);
-      // Reconnect after 5 seconds
+      // Try to reconnect after a delay when the connection is closed
       setTimeout(() => {
         if (eventSource.readyState === EventSource.CLOSED) {
           initSSE();
@@ -31,36 +91,54 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  // Render sessions table
+  /**
+   * Compute the badge class for a given status.  This function mirrors
+   * the logic of the original dashboard to keep consistent colours.
+   *
+   * @param {string} status
+   * @returns {string}
+   */
+  function getStatusBadgeClass(status) {
+    switch (status) {
+      case 'ready':        return 'bg-success';
+      case 'authenticated':return 'bg-info';
+      case 'qr':           return 'bg-warning text-dark';
+      case 'failed':       return 'bg-danger';
+      case 'disconnected': return 'bg-secondary';
+      default:             return 'bg-light text-dark';
+    }
+  }
+
+  /**
+   * Render the list of sessions (agents) into the table.  Each row
+   * displays the agent name, status, webhook, creation time and action
+   * buttons.  Action handlers delegate to helper functions.
+   *
+   * @param {Array<Object>} sessions
+   */
   function renderSessions(sessions) {
-    sessionsTable.innerHTML = '';
+    sessionsTableBody.innerHTML = '';
     sessions.forEach(session => {
-      const row = sessionsTable.insertRow();
-      
+      const row = sessionsTableBody.insertRow();
       // Name
       row.insertCell(0).textContent = session.name;
-      
-      // Status with badge
+      // Status badge
       const statusCell = row.insertCell(1);
-      const statusBadge = document.createElement('span');
-      statusBadge.className = `badge ${getStatusBadgeClass(session.status)}`;
-      statusBadge.textContent = session.status;
-      statusCell.appendChild(statusBadge);
-      
+      const badge = document.createElement('span');
+      badge.className = `badge ${getStatusBadgeClass(session.status)}`;
+      badge.textContent = session.status;
+      statusCell.appendChild(badge);
       // Webhook
       const webhookCell = row.insertCell(2);
       webhookCell.textContent = session.webhook || 'Not set';
-      
-      // Created At
+      // Created at
       const createdAtCell = row.insertCell(3);
       createdAtCell.textContent = new Date(session.createdAt).toLocaleString();
-      
       // Actions
       const actionsCell = row.insertCell(4);
       const actionsDiv = document.createElement('div');
       actionsDiv.className = 'd-flex gap-2';
-      
-      // QR Code button (only show if status is 'qr')
+      // QR button
       if (session.status === 'qr' && session.qr) {
         const qrBtn = document.createElement('button');
         qrBtn.className = 'btn btn-info btn-sm';
@@ -69,48 +147,37 @@ document.addEventListener('DOMContentLoaded', () => {
         qrBtn.onclick = () => showQRCode(session.qr);
         actionsDiv.appendChild(qrBtn);
       }
-      
       // Edit webhook button
       const editBtn = document.createElement('button');
       editBtn.className = 'btn btn-warning btn-sm';
-      editBtn.innerHTML = '<i class="fa-solid fa-edit"></i>';
+      editBtn.innerHTML = '<i class="fa-solid fa-pen"></i>';
       editBtn.title = 'Edit Webhook';
       editBtn.onclick = () => editWebhook(session.name, session.webhook);
       actionsDiv.appendChild(editBtn);
-      
       // Rescan button
       const rescanBtn = document.createElement('button');
       rescanBtn.className = 'btn btn-secondary btn-sm';
-      rescanBtn.innerHTML = '<i class="fa-solid fa-refresh"></i>';
+      rescanBtn.innerHTML = '<i class="fa-solid fa-sync"></i>';
       rescanBtn.title = 'Rescan QR';
       rescanBtn.onclick = () => rescanSession(session.name);
       actionsDiv.appendChild(rescanBtn);
-      
       // Delete button
       const deleteBtn = document.createElement('button');
       deleteBtn.className = 'btn btn-danger btn-sm';
       deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
-      deleteBtn.title = 'Delete Session';
+      deleteBtn.title = 'Delete Agent';
       deleteBtn.onclick = () => deleteSession(session.name);
       actionsDiv.appendChild(deleteBtn);
-      
       actionsCell.appendChild(actionsDiv);
     });
   }
 
-  // Get status badge class
-  function getStatusBadgeClass(status) {
-    switch (status) {
-      case 'ready': return 'bg-success';
-      case 'authenticated': return 'bg-info';
-      case 'qr': return 'bg-warning text-dark';
-      case 'failed': return 'bg-danger';
-      case 'disconnected': return 'bg-secondary';
-      default: return 'bg-light text-dark';
-    }
-  }
-
-  // Show QR Code modal
+  /**
+   * Display a QR code in the QR modal.  Accepts a QR string and uses
+   * qrcodejs to draw it onto the canvas element.
+   *
+   * @param {string} qrString
+   */
   function showQRCode(qrString) {
     const canvas = document.getElementById('qrCanvas');
     QRCode.toCanvas(canvas, qrString, { width: 256 }, (err) => {
@@ -122,132 +189,130 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Create new session
-  newSessionBtn.addEventListener('click', () => {
-    createSessionModal.show();
+  /**
+   * Trigger a rescan of the given agent name.  Uses the existing
+   * back‑end endpoint and displays an alert on failure.
+   *
+   * @param {string} name
+   */
+  async function rescanSession(name) {
+    if (!confirm(`Are you sure you want to rescan agent "${name}"?`)) return;
+    try {
+      const res = await fetch(`/api/sessions/${name}/rescan`, { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(`Failed to rescan agent: ${data.error}`);
+      }
+    } catch (e) {
+      console.error('Error rescanning agent', e);
+      alert('Network error');
+    }
+  }
+
+  /**
+   * Delete the given agent via the back‑end.  Confirmation is asked
+   * before sending the request.  Displays an alert on error.
+   *
+   * @param {string} name
+   */
+  async function deleteSession(name) {
+    if (!confirm(`Are you sure you want to delete agent "${name}"?`)) return;
+    try {
+      const res = await fetch(`/api/sessions/${name}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(`Failed to delete agent: ${data.error}`);
+      }
+    } catch (e) {
+      console.error('Error deleting agent', e);
+      alert('Network error');
+    }
+  }
+
+  /**
+   * Open the edit webhook modal for a given agent.  The current
+   * webhook is prefilled.  Error messages are hidden on open.
+   *
+   * @param {string} name
+   * @param {string|null} currentWebhook
+   */
+  function editWebhook(name, currentWebhook) {
+    document.getElementById('editSessionName').value    = name;
+    document.getElementById('editSessionWebhook').value = currentWebhook || '';
+    document.getElementById('editError').style.display  = 'none';
+    editWebhookModal.show();
+  }
+
+  // Event bindings
+  newAgentBtn.addEventListener('click', () => {
+    templateModal.show();
   });
 
-  createSessionForm.addEventListener('submit', async (e) => {
+  createAgentForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const name = document.getElementById('sessionName').value.trim();
-    const webhook = document.getElementById('sessionWebhook').value.trim();
+    const name    = document.getElementById('agentName').value.trim();
+    const webhook = selectedWebhookInput.value;
     const errorEl = document.getElementById('createError');
-    
     errorEl.style.display = 'none';
-    
     try {
-      const response = await fetch('/api/sessions', {
+      const res = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, webhook })
       });
-      
-      if (response.ok) {
-        createSessionModal.hide();
-        createSessionForm.reset();
+      if (res.ok) {
+        createAgentModal.hide();
+        createAgentForm.reset();
       } else {
-        const data = await response.json();
-        errorEl.textContent = data.error || 'Failed to create session';
+        const data = await res.json();
+        errorEl.textContent = data.error || 'Failed to create agent';
         errorEl.style.display = 'block';
       }
-    } catch (error) {
-      console.error('Error creating session:', error);
+    } catch (err) {
+      console.error('Error creating agent', err);
       errorEl.textContent = 'Network error';
       errorEl.style.display = 'block';
     }
   });
 
-  // Edit webhook
-  function editWebhook(sessionName, currentWebhook) {
-    document.getElementById('editSessionName').value = sessionName;
-    document.getElementById('editSessionWebhook').value = currentWebhook || '';
-    editWebhookModal.show();
-  }
-
   editWebhookForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const name = document.getElementById('editSessionName').value;
+    const name    = document.getElementById('editSessionName').value;
     const webhook = document.getElementById('editSessionWebhook').value.trim();
     const errorEl = document.getElementById('editError');
-    
     errorEl.style.display = 'none';
-    
     try {
-      const response = await fetch(`/api/sessions/${name}/webhook`, {
+      const res = await fetch(`/api/sessions/${name}/webhook`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ webhook })
       });
-      
-      if (response.ok) {
+      if (res.ok) {
         editWebhookModal.hide();
       } else {
-        const data = await response.json();
+        const data = await res.json();
         errorEl.textContent = data.error || 'Failed to update webhook';
         errorEl.style.display = 'block';
       }
-    } catch (error) {
-      console.error('Error updating webhook:', error);
+    } catch (err) {
+      console.error('Error updating webhook', err);
       errorEl.textContent = 'Network error';
       errorEl.style.display = 'block';
     }
   });
 
-  // Rescan session
-  async function rescanSession(sessionName) {
-    if (!confirm(`Are you sure you want to rescan session "${sessionName}"?`)) {
-      return;
-    }
-    
-    try {
-      const response = await fetch(`/api/sessions/${sessionName}/rescan`, {
-        method: 'POST'
-      });
-      
-      if (!response.ok) {
-        const data = await response.json();
-        alert(`Failed to rescan session: ${data.error}`);
-      }
-    } catch (error) {
-      console.error('Error rescanning session:', error);
-      alert('Network error');
-    }
-  }
-
-  // Delete session
-  async function deleteSession(sessionName) {
-    if (!confirm(`Are you sure you want to delete session "${sessionName}"?`)) {
-      return;
-    }
-    
-    try {
-      const response = await fetch(`/api/sessions/${sessionName}`, {
-        method: 'DELETE'
-      });
-      
-      if (!response.ok) {
-        const data = await response.json();
-        alert(`Failed to delete session: ${data.error}`);
-      }
-    } catch (error) {
-      console.error('Error deleting session:', error);
-      alert('Network error');
-    }
-  }
-
-  // Logout
   logoutBtn.addEventListener('click', async () => {
     try {
-      const response = await fetch('/logout', { method: 'POST' });
-      if (response.ok) {
+      const res = await fetch('/logout', { method: 'POST' });
+      if (res.ok) {
         window.location.href = '/login.html';
       }
-    } catch (error) {
-      console.error('Error logging out:', error);
+    } catch (err) {
+      console.error('Error logging out', err);
     }
   });
 
-  // Initialize
+  // Initialisation: load templates, populate UI and open SSE
+  loadTemplates().then(populateTemplateCards);
   initSSE();
 });
-
