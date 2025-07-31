@@ -11,6 +11,7 @@ const cors    = require('cors');
 const session = require('express-session');
 const axios   = require('axios');
 const { Client, LocalAuth } = require('whatsapp-web.js');
+const { createAndActivateWorkflow } = require('../n8n-api/n8n-api');
 
 // ── SETUP AUTH PERSISTENCE ─────────────────────────────────────────────────────
 const AUTH_ROOT    = path.resolve(__dirname, '../data/auth');
@@ -32,8 +33,21 @@ function saveSessionMeta() {
   fs.writeFileSync(SESSIONS_FILE, JSON.stringify(meta, null, 2));
 }
 
+// File untuk persist data agent AI
+const AGENTS_FILE = path.resolve(__dirname, '../data/agents.json');
+function loadAgents() {
+  if (!fs.existsSync(AGENTS_FILE)) return [];
+  try { return JSON.parse(fs.readFileSync(AGENTS_FILE)); }
+  catch { return []; }
+}
+function saveAgents() {
+  fs.mkdirSync(path.dirname(AGENTS_FILE), { recursive: true });
+  fs.writeFileSync(AGENTS_FILE, JSON.stringify(agents, null, 2));
+}
+
 // In-memory store & SSE clients
 const sessions   = {};
+const agents     = loadAgents();
 const sseClients = [];
 
 // ── EXPRESS SETUP ───────────────────────────────────────────────────────────────
@@ -355,6 +369,50 @@ api.delete('/sessions/:name', async (req, res) => {
     console.error('Error deleting session', err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// ── API CRUD AGENTS ───────────────────────────────────────────────────────────
+api.get('/agents', (req, res) => {
+  res.json(agents);
+});
+
+api.post('/agents', async (req, res) => {
+  const { name, channel, template } = req.body;
+  if (!name || !channel || !template) {
+    return res.status(400).json({ error: 'name, channel and template are required' });
+  }
+  const templatePath = path.resolve(__dirname, '../template-agent', template);
+  if (!fs.existsSync(templatePath)) {
+    return res.status(400).json({ error: 'template not found' });
+  }
+  try {
+    const apiKey = process.env.N8N_API_KEY;
+    if (!apiKey) throw new Error('N8N_API_KEY not set');
+    const { workflowId, executionId } = await createAndActivateWorkflow(apiKey, templatePath);
+    const agent = {
+      name,
+      channel,
+      template,
+      workflowId,
+      executionId,
+      createdAt: new Date().toISOString()
+    };
+    agents.push(agent);
+    saveAgents();
+    res.json(agent);
+  } catch (err) {
+    console.error('Error creating agent', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+api.get('/agent-templates', (req, res) => {
+  const dir = path.resolve(__dirname, '../template-agent');
+  fs.readdir(dir, (err, files) => {
+    if (err) return res.status(500).json({ error: 'cannot read templates' });
+    const list = files.filter(f => f.endsWith('.json'));
+    res.json(list);
+  });
 });
 
 // SSE endpoint for realtime status
