@@ -17,12 +17,6 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 // createAndActivateWorkflow().  See dashboard-server/n8n.js for details.
 const { createAndActivateWorkflow } = require('./n8n');
 
-// Directory containing JSON workflow templates.  When a new agent
-// is created via /api/agents, the server will look up the selected
-// template file in this directory, create a workflow on the n8n
-// instance, then return its ID along with a QR code for the new
-// WhatsApp session.
-const TEMPLATE_AGENT_DIR = path.resolve(__dirname, './template-agent');
 
 // ── SETUP AUTH PERSISTENCE ─────────────────────────────────────────────────────
 const AUTH_ROOT    = path.resolve(__dirname, '../data/auth');
@@ -58,8 +52,6 @@ app.use(session({
   saveUninitialized: false,
 }));
 app.use(express.static(path.join(__dirname, '../public')));
-// expose template-agent directory for front-end template selection
-app.use('/template-agent', express.static(TEMPLATE_AGENT_DIR));
 
 // Auth guard untuk dashboard/api
 function requireLogin(req, res, next) {
@@ -360,13 +352,13 @@ api.post('/sessions', async (req, res) => {
 
 // Create agent: build workflow from template and start WA session
 api.post('/agents', async (req, res) => {
-  const { templateName, agentName, systemMessage, webhook } = req.body;
-  if (!templateName || !agentName) {
-    return res.status(400).json({ error: 'templateName and agentName are required' });
+  const { templateId, agentName, systemMessage, webhook } = req.body;
+  if (!templateId || !agentName) {
+    return res.status(400).json({ error: 'templateId and agentName are required' });
   }
   try {
     const { workflowId, executionId } = await createAndActivateWorkflow(
-      templateName,
+      templateId,
       agentName,
       systemMessage
     );

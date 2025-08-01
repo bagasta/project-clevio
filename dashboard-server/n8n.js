@@ -581,24 +581,28 @@ class N8nApiClient {
   }
 }
 
-// Helper to create and immediately activate a workflow from a JSON template
-// file. The template directory is relative to this module. The workflow will
-// optionally have its name and system message overwritten based on the
-// supplied parameters. After creation the workflow is activated and a run is
+// Helper to create and immediately activate a workflow from the template
+// definitions stored in `public/templates.json`. The caller supplies the ID of
+// the desired template, along with optional overrides for the workflow name
+// and system message. After creation the workflow is activated and a run is
 // triggered so the caller receives an execution ID.
 const fs = require('fs');
 const path = require('path');
 
-async function createAndActivateWorkflow(templateName, agentName, systemMessage) {
+const TEMPLATES_FILE = path.resolve(__dirname, '../public/templates.json');
+
+async function createAndActivateWorkflow(templateId, agentName, systemMessage) {
   const apiKey = process.env.N8N_API_KEY;
   if (!apiKey) throw new Error('N8N_API_KEY not configured');
   const baseUrl = process.env.N8N_BASE_URL || 'https://n8n.chiefaiofficer.id/api/v1';
 
   const client = new N8nApiClient(apiKey, baseUrl);
 
-  // Load template and apply simple overrides
-  const templatePath = path.join(__dirname, 'template-agent', templateName);
-  const workflow = JSON.parse(fs.readFileSync(templatePath, 'utf8'));
+  // Load templates list and locate the requested template
+  const templates = JSON.parse(fs.readFileSync(TEMPLATES_FILE, 'utf8'));
+  const found = templates.find(t => t.id === templateId);
+  if (!found) throw new Error(`Template '${templateId}' not found`);
+  const workflow = JSON.parse(JSON.stringify(found.workflow));
   if (agentName) workflow.name = agentName;
   if (systemMessage) workflow.systemMessage = systemMessage;
 
