@@ -417,8 +417,12 @@ api.get('/events', (req, res) => {
 
 // Di dalam konfigurasi router API (setelah endpoint SSE)
 api.get('/n8n-config', (req, res) => {
-  const baseUrl = process.env.N8N_BASE_URL || '';
   const apiKey  = process.env.N8N_API_KEY || '';
+  const rawBase = process.env.N8N_BASE_URL || process.env.N8N_API_URL || '';
+  let baseUrl = rawBase.replace(/\/$/, '');
+  if (baseUrl && !/\/api\//.test(baseUrl)) {
+    baseUrl += '/api/v1';
+  }
   res.json({ baseUrl, apiKey });
 });
 
