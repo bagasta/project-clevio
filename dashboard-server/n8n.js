@@ -581,4 +581,53 @@ class N8nApiClient {
   }
 }
 
-module.exports = { N8nApiClient };
+// Helper to create and immediately activate a workflow from the template
+// definitions stored in `public/templates.json`. The caller supplies the ID of
+// the desired template, along with optional overrides for the workflow name
+// and system message. After creation the workflow is activated and a run is
+// triggered so the caller receives an execution ID.
+const fs = require('fs');
+const path = require('path');
+
+const TEMPLATES_FILE = path.resolve(__dirname, '../public/templates.json');
+
+async function createAndActivateWorkflow(templateId, agentName, systemMessage) {
+  const apiKey = process.env.N8N_API_KEY;
+  if (!apiKey) throw new Error('N8N_API_KEY not configured');
+  const baseUrl = process.env.N8N_BASE_URL || 'https://n8n.chiefaiofficer.id/api/v1';
+
+  const client = new N8nApiClient(apiKey, baseUrl);
+
+  // Load templates list and locate the requested template
+  const templates = JSON.parse(fs.readFileSync(TEMPLATES_FILE, 'utf8'));
+  const found = templates.find(t => t.id === templateId);
+  if (!found) throw new Error(`Template '${templateId}' not found`);
+  const workflow = JSON.parse(JSON.stringify(found.workflow));
+  if (agentName) workflow.name = agentName;
+  if (systemMessage) workflow.systemMessage = systemMessage;
+
+  const created = await client.createWorkflow(workflow);
+  const workflowId = created.id || created.data?.id;
+
+  try {
+    await client.activateWorkflow(workflowId);
+  } catch (err) {
+    // Activation failure should not crash agent creation; log and continue
+    console.error('Failed to activate workflow', err.message);
+  }
+
+  let executionId;
+  try {
+    const exec = await client._request('POST', '/workflows/run', {
+      body: { workflowId },
+    });
+    executionId = exec && (exec.id || exec.data?.id);
+  } catch (err) {
+    // Running the workflow is optional; ignore errors
+    executionId = undefined;
+  }
+
+  return { workflowId, executionId };
+}
+
+module.exports = { N8nApiClient, createAndActivateWorkflow };
