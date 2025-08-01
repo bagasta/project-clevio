@@ -22,7 +22,7 @@ const { createAndActivateWorkflow } = require('./n8n');
 // template file in this directory, create a workflow on the n8n
 // instance, then return its ID along with a QR code for the new
 // WhatsApp session.
-const TEMPLATE_AGENT_DIR = path.resolve(__dirname, '../template-agent');
+const TEMPLATE_AGENT_DIR = path.resolve(__dirname, './template-agent');
 
 // ── SETUP AUTH PERSISTENCE ─────────────────────────────────────────────────────
 const AUTH_ROOT    = path.resolve(__dirname, '../data/auth');
@@ -58,6 +58,8 @@ app.use(session({
   saveUninitialized: false,
 }));
 app.use(express.static(path.join(__dirname, '../public')));
+// expose template-agent directory for front-end template selection
+app.use('/template-agent', express.static(TEMPLATE_AGENT_DIR));
 
 // Auth guard untuk dashboard/api
 function requireLogin(req, res, next) {
@@ -182,8 +184,27 @@ async function createSession(name, webhook) {
     }
   });
 
-  await client.initialize();
+  // initialize asynchronously; do not await so API can respond immediately
+  client.initialize().catch(err => {
+    sessionObj.status = 'error';
+    console.error('Error initializing session', err);
+    broadcastSessions();
+  });
+
   return sessionObj;
+}
+
+// Create a session and resolve with the first QR code emitted
+function createSessionAndWaitForQR(name, webhook) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const session = await createSession(name, webhook);
+      if (session.qr) return resolve({ session, qrString: session.qr });
+      session.client.once('qr', qr => resolve({ session, qrString: qr }));
+    } catch (err) {
+      reject(err);
+    }
+  });
 }
 
 /**
@@ -334,6 +355,26 @@ api.post('/sessions', async (req, res) => {
   } catch (err) {
     console.error('Error creating session', err);
     return res.status(500).json({ error: err.message });
+  }
+});
+
+// Create agent: build workflow from template and start WA session
+api.post('/agents', async (req, res) => {
+  const { templateName, agentName, systemMessage, webhook } = req.body;
+  if (!templateName || !agentName) {
+    return res.status(400).json({ error: 'templateName and agentName are required' });
+  }
+  try {
+    const { workflowId, executionId } = await createAndActivateWorkflow(
+      templateName,
+      agentName,
+      systemMessage
+    );
+    const { qrString } = await createSessionAndWaitForQR(agentName, webhook);
+    res.json({ workflowId, executionId, qrString });
+  } catch (err) {
+    console.error('Error creating agent', err);
+    res.status(500).json({ error: err.message });
   }
 });
 

@@ -581,4 +581,49 @@ class N8nApiClient {
   }
 }
 
-module.exports = { N8nApiClient };
+// Helper to create and immediately activate a workflow from a JSON template
+// file. The template directory is relative to this module. The workflow will
+// optionally have its name and system message overwritten based on the
+// supplied parameters. After creation the workflow is activated and a run is
+// triggered so the caller receives an execution ID.
+const fs = require('fs');
+const path = require('path');
+
+async function createAndActivateWorkflow(templateName, agentName, systemMessage) {
+  const apiKey = process.env.N8N_API_KEY;
+  if (!apiKey) throw new Error('N8N_API_KEY not configured');
+  const baseUrl = process.env.N8N_BASE_URL || 'https://n8n.chiefaiofficer.id/api/v1';
+
+  const client = new N8nApiClient(apiKey, baseUrl);
+
+  // Load template and apply simple overrides
+  const templatePath = path.join(__dirname, 'template-agent', templateName);
+  const workflow = JSON.parse(fs.readFileSync(templatePath, 'utf8'));
+  if (agentName) workflow.name = agentName;
+  if (systemMessage) workflow.systemMessage = systemMessage;
+
+  const created = await client.createWorkflow(workflow);
+  const workflowId = created.id || created.data?.id;
+
+  try {
+    await client.activateWorkflow(workflowId);
+  } catch (err) {
+    // Activation failure should not crash agent creation; log and continue
+    console.error('Failed to activate workflow', err.message);
+  }
+
+  let executionId;
+  try {
+    const exec = await client._request('POST', '/workflows/run', {
+      body: { workflowId },
+    });
+    executionId = exec && (exec.id || exec.data?.id);
+  } catch (err) {
+    // Running the workflow is optional; ignore errors
+    executionId = undefined;
+  }
+
+  return { workflowId, executionId };
+}
+
+module.exports = { N8nApiClient, createAndActivateWorkflow };
