@@ -28,41 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let templates = [];
   let eventSource;
 
-  // ---------------------------------------------------------------------------
-  // n8n integration configuration
-  //
-  // The base URL and API key for n8n are loaded dynamically from the
-  // backend via the `/api/n8n-config` endpoint.  These variables are
-  // defined as ``let`` so they can be updated after fetching the config.
-  //
-  // If your environment injects ``window.N8N_BASE_URL`` or ``window.N8N_API_KEY``
-  // before this script is executed (for example via server-side templating),
-  // those values will be used as defaults until overridden by the config
-  // fetch.  If no configuration is provided, workflow creation will be
-  // skipped.  The API key will be sent in the ``X-N8N-API-KEY`` header.
-  let N8N_BASE_URL = window.N8N_BASE_URL || '';
-  let N8N_API_KEY  = window.N8N_API_KEY  || '';
-
-  /**
-   * Load n8n configuration from the backend.  The server should expose
-   * environment variables via ``/api/n8n-config`` which returns an object
-   * containing ``baseUrl`` and ``apiKey``.  On success, these values
-   * overwrite the current ``N8N_BASE_URL`` and ``N8N_API_KEY``.  If the
-   * endpoint is not available or returns an error, the function silently
-   * ignores the failure and retains any existing values.
-   */
-  async function loadN8nConfig() {
-    try {
-      const res = await fetch('/api/n8n-config');
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.baseUrl) N8N_BASE_URL = data.baseUrl;
-      if (data.apiKey)  N8N_API_KEY  = data.apiKey;
-    } catch (err) {
-      // Ignore network errors; missing config simply disables n8n integration
-      console.warn('Could not load n8n configuration:', err);
-    }
-  }
+  // No n8n configuration is needed on the client anymore. Workflow
+  // creation is proxied through the backend to avoid cross-origin
+  // requests from the browser.
 
   // A map of agent names to the workflow JSON that should be used to create
   // their corresponding n8n workflow.  Populated after successfully creating
@@ -366,58 +334,29 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * Create and activate a workflow in n8n for the given agent.  This function
-   * first sends a POST request to the n8n /rest/workflows endpoint with the
-   * workflow JSON.  When successful, it then sends a PATCH request to
-   * /rest/workflows/<id> with `{ active: true }` to activate it.  Both
-   * requests include the optional Authorization header if provided.  Upon
-   * successful activation, the agent is marked as having its workflow created.
-   *
-   * If N8N_BASE_URL is not configured, the function logs a warning and
-   * immediately marks the workflow as created to avoid repeated attempts.
+   * Create and activate a workflow in n8n for the given agent.  The browser
+   * sends the workflow definition to the backend which proxies the request to
+   * n8n, avoiding CORS issues.  Upon successful activation, the agent is
+   * marked as having its workflow created.
    *
    * @param {string} agentName The name of the agent/session
    * @param {Object} workflow The workflow definition to send to n8n
    */
   async function createAndActivateWorkflow(agentName, workflow) {
-    // Do nothing if n8n configuration is missing
-    if (!N8N_BASE_URL) {
-      console.warn('N8N_BASE_URL is not configured; skipping workflow creation');
-      workflowCreated[agentName] = true;
-      delete workflowMap[agentName];
-      return;
-    }
     try {
-      // POST: create workflow
-      const createRes = await fetch(`${N8N_BASE_URL.replace(/\/$/, '')}/rest/workflows`, {
+      const res = await fetch('/api/workflows', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(N8N_API_KEY ? { 'X-N8N-API-KEY': N8N_API_KEY } : {})
-        },
-        body: JSON.stringify(workflow)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workflow })
       });
-      if (!createRes.ok) {
-        console.error('Failed to create workflow in n8n', await createRes.text());
+      if (!res.ok) {
+        console.error('Failed to create workflow via server', await res.text());
         return;
       }
-      const createData = await createRes.json();
-      const workflowId = createData?.id || createData?.data?.id;
+      const data = await res.json();
+      const workflowId = data?.id;
       if (!workflowId) {
-        console.error('n8n workflow creation response did not include an ID');
-        return;
-      }
-      // PATCH: activate workflow
-      const activateRes = await fetch(`${N8N_BASE_URL.replace(/\/$/, '')}/rest/workflows/${workflowId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(N8N_API_KEY ? { 'X-N8N-API-KEY': N8N_API_KEY } : {})
-        },
-        body: JSON.stringify({ active: true, settings: {}, staticData: null, tags: [] })
-      });
-      if (!activateRes.ok) {
-        console.error('Failed to activate workflow in n8n', await activateRes.text());
+        console.error('Workflow creation response missing id');
         return;
       }
       console.log(`n8n workflow for agent "${agentName}" created and activated (ID: ${workflowId})`);
@@ -686,12 +625,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Initialisation: load templates, then load n8n config, then start SSE
-  // Load templates and populate the template cards first
-  loadTemplates().then(populateTemplateCards);
-  // Fetch n8n configuration; do not block the rest of the UI on this
-  loadN8nConfig().finally(() => {
-    // Start the SSE connection after attempting to load config
+  // Initialisation: load templates and then start the SSE connection
+  loadTemplates().then(() => {
+    populateTemplateCards();
     initSSE();
   });
 });

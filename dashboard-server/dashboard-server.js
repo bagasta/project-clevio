@@ -382,6 +382,21 @@ api.get('/events', (req, res) => {
   });
 });
 
+// Proxy to create & activate workflows in n8n.  Expects a JSON body
+// with a `workflow` object and optional `systemMessage`.  This avoids
+// browser CORS issues by letting the server communicate with n8n.
+api.post('/workflows', async (req, res) => {
+  const { workflow, systemMessage } = req.body || {};
+  if (!workflow) return res.status(400).json({ error: 'workflow is required' });
+  try {
+    const id = await createAndActivateWorkflow(workflow, { systemMessage });
+    res.json({ id });
+  } catch (err) {
+    console.error('Error creating/activating workflow', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Di dalam konfigurasi router API (setelah endpoint SSE)
 api.get('/n8n-config', (req, res) => {
   const baseUrl = process.env.N8N_BASE_URL || '';
