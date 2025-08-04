@@ -1,9 +1,9 @@
 /*
  * Front-end script for the "Add Your Agent" page.
  * 
- * Ini memuat daftar template dari file statis template-agent/templates.json,
- * menampilkan nama template tanpa ekstensi .json untuk kenyamanan,
- * lalu memuat isi file JSON ketika template dipilih untuk mengambil systemMessage.
+ * Ini memuat daftar template dari file statis public/templates.json,
+ * menampilkan nama template untuk kenyamanan, kemudian mengisi systemMessage
+ * dari data template yang sudah dimuat ketika pilihan berubah.
  * Setelah formulir diisi, data dikirim ke endpoint /api/agents seperti semula.
  */
 
@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultDiv = document.getElementById('agentResult');
 
   let templatesLoaded = false;
+  let templatesData = [];
 
   // Tampilkan form saat tombol Create Agent diklik dan muat template sekali saja
   createBtn.addEventListener('click', async () => {
@@ -30,33 +31,17 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadTemplates() {
     try {
       resultDiv.textContent = '';
-      const res = await fetch('/template-agent/templates.json');
+      const res = await fetch('/templates.json');
       if (!res.ok) {
         throw new Error(`Failed to fetch templates: ${res.status} ${res.statusText}`);
       }
-      const data = await res.json();
-      let list;
-      if (Array.isArray(data)) {
-        list = data;
-      } else if (Array.isArray(data.templates)) {
-        list = data.templates;
-      } else if (data.templates && typeof data.templates === 'object') {
-        list = Object.values(data.templates);
-      } else if (typeof data === 'object') {
-        list = Object.keys(data);
-      } else {
-        list = [];
-      }
+      templatesData = await res.json();
+      if (!Array.isArray(templatesData)) templatesData = [];
       templateSelect.innerHTML = '<option value="" disabled selected>Pilih template…</option>';
-      list.forEach((item) => {
-        let filename = '';
-        if (typeof item === 'string') filename = item;
-        else if (item) filename = item.name || item.templateName || item.fileName || '';
-        if (!filename) return;
-        const label = filename.replace(/\.json$/i, '');
+      templatesData.forEach((item) => {
         const opt = document.createElement('option');
-        opt.value = filename;
-        opt.textContent = label;
+        opt.value = item.id;
+        opt.textContent = item.name || item.id;
         templateSelect.appendChild(opt);
       });
       templatesLoaded = true;
@@ -68,34 +53,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Memuat detail template (system message) ketika template dipilih
   templateSelect.addEventListener('change', async () => {
-    const templateName = templateSelect.value;
-    if (!templateName) return;
-    try {
-      const res = await fetch(`/template-agent/${encodeURIComponent(templateName)}`);
-      if (!res.ok) {
-        throw new Error(`Failed to fetch template details: ${res.status} ${res.statusText}`);
-      }
-      const data = await res.json();
-      const sysMsg =
-        data.systemMessage ||
-        data.system_message ||
-        data.defaultSystemMessage ||
-        '';
-      systemMessageInput.value = sysMsg;
-    } catch (err) {
-      console.error('Error fetching template detail:', err);
-      resultDiv.textContent = 'Error fetching template detail: ' + err.message;
-    }
+    const templateId = templateSelect.value;
+    if (!templateId) return;
+    const tmpl = templatesData.find(t => t.id === templateId);
+    const sysMsg = tmpl?.workflow?.systemMessage || '';
+    systemMessageInput.value = sysMsg;
   });
 
   // Kirim permintaan pembuatan agent ke server
   submitAgentBtn.addEventListener('click', async () => {
-    const templateName = templateSelect.value;
+    const templateId = templateSelect.value;
     const agentName = agentNameInput.value.trim();
     const systemMessage = systemMessageInput.value.trim();
     resultDiv.textContent = '';
 
-    if (!templateName) {
+    if (!templateId) {
       resultDiv.textContent = 'Please select a template.';
       return;
     }
@@ -110,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/api/agents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ templateName, agentName, systemMessage }),
+        body: JSON.stringify({ templateId, agentName, systemMessage }),
       });
       if (!res.ok) {
         throw new Error(`Failed to create agent: ${res.status} ${res.statusText}`);
@@ -138,3 +110,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+

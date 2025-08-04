@@ -17,12 +17,6 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 // createAndActivateWorkflow().  See dashboard-server/n8n.js for details.
 const { createAndActivateWorkflow } = require('./n8n');
 
-// Directory containing JSON workflow templates.  When a new agent
-// is created via /api/agents, the server will look up the selected
-// template file in this directory, create a workflow on the n8n
-// instance, then return its ID along with a QR code for the new
-// WhatsApp session.
-const TEMPLATE_AGENT_DIR = path.resolve(__dirname, '../template-agent');
 
 // ── SETUP AUTH PERSISTENCE ─────────────────────────────────────────────────────
 const AUTH_ROOT    = path.resolve(__dirname, '../data/auth');
@@ -182,8 +176,27 @@ async function createSession(name, webhook) {
     }
   });
 
-  await client.initialize();
+  // initialize asynchronously; do not await so API can respond immediately
+  client.initialize().catch(err => {
+    sessionObj.status = 'error';
+    console.error('Error initializing session', err);
+    broadcastSessions();
+  });
+
   return sessionObj;
+}
+
+// Create a session and resolve with the first QR code emitted
+function createSessionAndWaitForQR(name, webhook) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const session = await createSession(name, webhook);
+      if (session.qr) return resolve({ session, qrString: session.qr });
+      session.client.once('qr', qr => resolve({ session, qrString: qr }));
+    } catch (err) {
+      reject(err);
+    }
+  });
 }
 
 /**
@@ -337,6 +350,26 @@ api.post('/sessions', async (req, res) => {
   }
 });
 
+// Create agent: build workflow from template and start WA session
+api.post('/agents', async (req, res) => {
+  const { templateId, agentName, systemMessage, webhook } = req.body;
+  if (!templateId || !agentName) {
+    return res.status(400).json({ error: 'templateId and agentName are required' });
+  }
+  try {
+    const { workflowId, executionId } = await createAndActivateWorkflow(
+      templateId,
+      agentName,
+      systemMessage
+    );
+    const { qrString } = await createSessionAndWaitForQR(agentName, webhook);
+    res.json({ workflowId, executionId, qrString });
+  } catch (err) {
+    console.error('Error creating agent', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 api.put('/sessions/:name/webhook', (req, res) => {
   const { name } = req.params;
   const { webhook } = req.body;
@@ -384,8 +417,12 @@ api.get('/events', (req, res) => {
 
 // Di dalam konfigurasi router API (setelah endpoint SSE)
 api.get('/n8n-config', (req, res) => {
-  const baseUrl = process.env.N8N_BASE_URL || '';
   const apiKey  = process.env.N8N_API_KEY || '';
+  const rawBase = process.env.N8N_BASE_URL || process.env.N8N_API_URL || '';
+  let baseUrl = rawBase.replace(/\/$/, '');
+  if (baseUrl && !/\/api\//.test(baseUrl)) {
+    baseUrl += '/api/v1';
+  }
   res.json({ baseUrl, apiKey });
 });
 
