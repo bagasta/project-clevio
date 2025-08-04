@@ -24,6 +24,21 @@
  *     serialised to JSON automatically.
  */
 
+// Load .env so N8N_API_URL and N8N_API_KEY can be read when this module is
+// required directly.  Search for an .env either one directory up or in the
+// current directory so the server can run from different working directories.
+const path = require('path');
+const fs = require('fs');
+try {
+  const envPath = [
+    path.resolve(__dirname, '../.env'),
+    path.resolve(__dirname, '.env')
+  ].find(p => fs.existsSync(p));
+  if (envPath) require('dotenv').config({ path: envPath });
+} catch {
+  // ignore - environment variables may be provided another way
+}
+
 class N8nApiClient {
   /**
    * Create a new API client.

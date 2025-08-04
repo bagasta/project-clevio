@@ -3,8 +3,15 @@
 // Load environment variables & modules
 const path = require('path');
 const fs   = require('fs');
-try { require('dotenv').config({ path: path.resolve(__dirname, '../.env') }); }
-catch { console.warn('dotenv not found; skipping .env'); }
+try {
+  const envPath = [
+    path.resolve(__dirname, '../.env'),
+    path.resolve(__dirname, '.env')
+  ].find(p => fs.existsSync(p));
+  if (envPath) require('dotenv').config({ path: envPath });
+} catch {
+  console.warn('dotenv not found; skipping .env');
+}
 
 const express = require('express');
 const cors    = require('cors');
