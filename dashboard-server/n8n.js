@@ -5,7 +5,7 @@
  * REST API.  It implements methods corresponding to each documented
  * endpoint in the OpenAPI specification at
  * https://n8n.chiefaiofficer.id/api/v1/docs/swagger-ui-init.js.  The
- * client requires an API key which is passed in the `X-N8N-API-KEY`
+ * client requires an API key which is passed in the `n8n-api-key`
  * header for all requests【203074212987127†L2869-L2874】.
  *
  * Usage example:
@@ -44,17 +44,21 @@ class N8nApiClient {
    * Create a new API client.
    *
    * @param {string} apiKey - Your n8n API key. It will be sent via the
-   *   `X-N8N-API-KEY` header on every request.
-   * @param {string} [baseUrl] - Base URL of the API. Defaults to
-   *   `https://n8n.chiefaiofficer.id/api/v1`.
+   *   `n8n-api-key` header on every request.
+   * @param {string} [baseUrl] - Base URL of the API. If a root URL is
+   *   provided (e.g. `https://n8n.example.com`) the `/api/v1` path is
+   *   automatically appended.
    */
-  constructor(apiKey, baseUrl = 'https://n8n.chiefaiofficer.id/api/v1') {
+  constructor(apiKey, baseUrl = 'https://n8n.chiefaiofficer.id') {
     if (!apiKey) {
       throw new Error('An API key is required to use the n8n API');
     }
-    this.baseUrl = baseUrl.replace(/\/$/, '');
+    const normalized = baseUrl.replace(/\/$/, '');
+    this.baseUrl = normalized.endsWith('/api/v1')
+      ? normalized
+      : `${normalized}/api/v1`;
     this.headers = {
-      'X-N8N-API-KEY': apiKey,
+      'n8n-api-key': apiKey,
       'Content-Type': 'application/json',
       Accept: 'application/json',
     };
@@ -674,12 +678,7 @@ async function createAndActivateWorkflow(workflow, { systemMessage } = {}) {
   }
 
   // Activate the newly created workflow
-  await client.updateWorkflow(workflowId, {
-    active: true,
-    settings: {},
-    staticData: null,
-    tags: [],
-  });
+  await client.activateWorkflow(workflowId);
 
   return workflowId;
 }

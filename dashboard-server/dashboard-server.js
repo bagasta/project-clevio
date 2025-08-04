@@ -399,8 +399,10 @@ api.post('/workflows', async (req, res) => {
     const id = await createAndActivateWorkflow(workflow, { systemMessage });
     res.json({ id });
   } catch (err) {
+    const match = /HTTP (\d+)/.exec(err.message || '');
+    const status = match ? parseInt(match[1], 10) : 500;
     console.error('Error creating/activating workflow', err);
-    res.status(500).json({ error: err.message });
+    res.status(status).json({ error: err.message });
   }
 });
 
