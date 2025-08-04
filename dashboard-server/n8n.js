@@ -604,14 +604,12 @@ class N8nApiClient {
  * Sanitize a workflow before sending it to n8n.  n8n rejects certain
  * properties such as "id" or "meta" when creating a new workflow.
  * This helper removes those properties and also strips identifiers from
- * each node.  If a `systemMessage` is provided it will be applied to the
- * AI Agent node via `parameters.options.systemMessage`.
+ * each node.
  *
  * @param {object} workflow  Workflow definition to sanitize
- * @param {string} [systemMessage] Optional system message for the AI Agent
  * @returns {object} Sanitized workflow ready for creation
  */
-function sanitizeWorkflow(workflow, systemMessage) {
+function sanitizeWorkflow(workflow) {
   const sanitized = JSON.parse(JSON.stringify(workflow || {}));
 
   // Remove top-level properties not accepted by createWorkflow
@@ -621,27 +619,14 @@ function sanitizeWorkflow(workflow, systemMessage) {
   delete sanitized.tags;
   delete sanitized.createdAt;
   delete sanitized.updatedAt;
+  delete sanitized.systemMessage;
 
-  // Remove node-specific IDs and optionally update system message
+  // Remove node-specific IDs
   if (Array.isArray(sanitized.nodes)) {
     for (const node of sanitized.nodes) {
       if (!node || typeof node !== 'object') continue;
       delete node.id;
       delete node.webhookId;
-
-      if (
-        systemMessage &&
-        [
-          '@n8n/n8n-nodes-langchain.agent',
-          '@n8n/n8n-nodes-langchain.agent/tools',
-          'n8n-nodes-langchain.agent',
-          'n8n-nodes-langchain.agent/tools',
-        ].includes(node.type)
-      ) {
-        node.parameters = node.parameters || {};
-        node.parameters.options = node.parameters.options || {};
-        node.parameters.options.systemMessage = systemMessage;
-      }
     }
   }
 
@@ -653,12 +638,9 @@ function sanitizeWorkflow(workflow, systemMessage) {
  * sanitized to ensure the API accepts it.
  *
  * @param {object} workflow - Workflow template to create.
- * @param {object} [options]
- * @param {string} [options.systemMessage] - Optional system message applied to
- *   the AI Agent node.
  * @returns {Promise<string>} ID of the created workflow
  */
-async function createAndActivateWorkflow(workflow, { systemMessage } = {}) {
+async function createAndActivateWorkflow(workflow) {
   const apiUrl = process.env.N8N_API_URL;
   const apiKey = process.env.N8N_API_KEY;
 
@@ -669,7 +651,7 @@ async function createAndActivateWorkflow(workflow, { systemMessage } = {}) {
   const client = new N8nApiClient(apiKey, apiUrl);
 
   // Sanitize the workflow before sending to n8n
-  const sanitized = sanitizeWorkflow(workflow, systemMessage);
+  const sanitized = sanitizeWorkflow(workflow);
 
   const created = await client.createWorkflow(sanitized);
   const workflowId = created?.id || created?.data?.id;

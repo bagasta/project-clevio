@@ -341,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
    *
    * @param {string} agentName The name of the agent/session
    * @param {Object} workflow The workflow definition to send to n8n
-   */
+  */
   async function createAndActivateWorkflow(agentName, workflow) {
     try {
       const res = await fetch('/api/workflows', {
@@ -360,12 +360,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       console.log(`n8n workflow for agent "${agentName}" created and activated (ID: ${workflowId})`);
-    } catch (err) {
-      console.error('Error creating/activating n8n workflow', err);
-    } finally {
       // Mark as created to prevent subsequent attempts
       workflowCreated[agentName] = true;
       delete workflowMap[agentName];
+    } catch (err) {
+      console.error('Error creating/activating n8n workflow', err);
     }
   }
 
