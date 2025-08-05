@@ -5,7 +5,7 @@
  * REST API.  It implements methods corresponding to each documented
  * endpoint in the OpenAPI specification at
  * https://n8n.chiefaiofficer.id/api/v1/docs/swagger-ui-init.js.  The
- * client requires an API key which is passed in the `X-N8N-API-KEY`
+ * client requires an API key which is passed in the `n8n-api-key`
  * header for all requests【203074212987127†L2869-L2874】.
  *
  * Usage example:
@@ -24,22 +24,41 @@
  *     serialised to JSON automatically.
  */
 
+// Load .env so N8N_API_URL and N8N_API_KEY can be read when this module is
+// required directly.  Search for an .env either one directory up or in the
+// current directory so the server can run from different working directories.
+const path = require('path');
+const fs = require('fs');
+try {
+  const envPath = [
+    path.resolve(__dirname, '../.env'),
+    path.resolve(__dirname, '.env')
+  ].find(p => fs.existsSync(p));
+  if (envPath) require('dotenv').config({ path: envPath });
+} catch {
+  // ignore - environment variables may be provided another way
+}
+
 class N8nApiClient {
   /**
    * Create a new API client.
    *
    * @param {string} apiKey - Your n8n API key. It will be sent via the
-   *   `X-N8N-API-KEY` header on every request.
-   * @param {string} [baseUrl] - Base URL of the API. Defaults to
-   *   `https://n8n.chiefaiofficer.id/api/v1`.
+   *   `n8n-api-key` header on every request.
+   * @param {string} [baseUrl] - Base URL of the API. If a root URL is
+   *   provided (e.g. `https://n8n.example.com`) the `/api/v1` path is
+   *   automatically appended.
    */
-  constructor(apiKey, baseUrl = 'https://n8n.chiefaiofficer.id/api/v1') {
+  constructor(apiKey, baseUrl = 'https://n8n.chiefaiofficer.id') {
     if (!apiKey) {
       throw new Error('An API key is required to use the n8n API');
     }
-    this.baseUrl = baseUrl.replace(/\/$/, '');
+    const normalized = baseUrl.replace(/\/$/, '');
+    this.baseUrl = normalized.endsWith('/api/v1')
+      ? normalized
+      : `${normalized}/api/v1`;
     this.headers = {
-      'X-N8N-API-KEY': apiKey,
+      'n8n-api-key': apiKey,
       'Content-Type': 'application/json',
       Accept: 'application/json',
     };
@@ -581,4 +600,69 @@ class N8nApiClient {
   }
 }
 
-module.exports = { N8nApiClient };
+/**
+ * Sanitize a workflow before sending it to n8n.  n8n rejects certain
+ * properties such as "id" or "meta" when creating a new workflow.
+ * This helper removes those properties and also strips identifiers from
+ * each node.
+ *
+ * @param {object} workflow  Workflow definition to sanitize
+ * @returns {object} Sanitized workflow ready for creation
+ */
+function sanitizeWorkflow(workflow) {
+  const sanitized = JSON.parse(JSON.stringify(workflow || {}));
+
+  // Remove top-level properties not accepted by createWorkflow
+  delete sanitized.id;
+  delete sanitized.versionId;
+  delete sanitized.meta;
+  delete sanitized.tags;
+  delete sanitized.createdAt;
+  delete sanitized.updatedAt;
+  delete sanitized.systemMessage;
+
+  // Remove node-specific IDs
+  if (Array.isArray(sanitized.nodes)) {
+    for (const node of sanitized.nodes) {
+      if (!node || typeof node !== 'object') continue;
+      delete node.id;
+      delete node.webhookId;
+    }
+  }
+
+  return sanitized;
+}
+
+/**
+ * Create a workflow in n8n and activate it.  The workflow template is first
+ * sanitized to ensure the API accepts it.
+ *
+ * @param {object} workflow - Workflow template to create.
+ * @returns {Promise<string>} ID of the created workflow
+ */
+async function createAndActivateWorkflow(workflow) {
+  const apiUrl = process.env.N8N_API_URL;
+  const apiKey = process.env.N8N_API_KEY;
+
+  if (!apiUrl || !apiKey) {
+    throw new Error('N8N_API_URL and N8N_API_KEY must be set');
+  }
+
+  const client = new N8nApiClient(apiKey, apiUrl);
+
+  // Sanitize the workflow before sending to n8n
+  const sanitized = sanitizeWorkflow(workflow);
+
+  const created = await client.createWorkflow(sanitized);
+  const workflowId = created?.id || created?.data?.id;
+  if (!workflowId) {
+    throw new Error('n8n workflow creation response did not include an ID');
+  }
+
+  // Activate the newly created workflow
+  await client.activateWorkflow(workflowId);
+
+  return workflowId;
+}
+
+module.exports = { N8nApiClient, createAndActivateWorkflow };

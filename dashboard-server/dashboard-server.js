@@ -3,8 +3,15 @@
 // Load environment variables & modules
 const path = require('path');
 const fs   = require('fs');
-try { require('dotenv').config({ path: path.resolve(__dirname, '../.env') }); }
-catch { console.warn('dotenv not found; skipping .env'); }
+try {
+  const envPath = [
+    path.resolve(__dirname, '../.env'),
+    path.resolve(__dirname, '.env')
+  ].find(p => fs.existsSync(p));
+  if (envPath) require('dotenv').config({ path: envPath });
+} catch {
+  console.warn('dotenv not found; skipping .env');
+}
 
 const express = require('express');
 const cors    = require('cors');
@@ -382,11 +389,21 @@ api.get('/events', (req, res) => {
   });
 });
 
-// Di dalam konfigurasi router API (setelah endpoint SSE)
-api.get('/n8n-config', (req, res) => {
-  const baseUrl = process.env.N8N_BASE_URL || '';
-  const apiKey  = process.env.N8N_API_KEY || '';
-  res.json({ baseUrl, apiKey });
+// Proxy to create & activate workflows in n8n.  Expects a JSON body
+// with a `workflow` object.  This avoids browser CORS issues by letting
+// the server communicate with n8n directly.
+api.post('/workflows', async (req, res) => {
+  const { workflow } = req.body || {};
+  if (!workflow) return res.status(400).json({ error: 'workflow is required' });
+  try {
+    const id = await createAndActivateWorkflow(workflow);
+    res.json({ id });
+  } catch (err) {
+    const match = /HTTP (\d+)/.exec(err.message || '');
+    const status = match ? parseInt(match[1], 10) : 500;
+    console.error('Error creating/activating workflow', err);
+    res.status(status).json({ error: err.message });
+  }
 });
 
 app.use('/api', api);
